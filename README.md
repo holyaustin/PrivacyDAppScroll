@@ -3,6 +3,7 @@
 # On-chain Privacy DApp Demo
 
 This demo showcases all the parts needed to create a privacy preserving DApp with good UX which are:
+
 * A circuit
 * A smart contract
 * A relayer
@@ -40,6 +41,7 @@ tar -xvf $HOME/.nargo/bin/nargo-x86_64-unknown-linux-gnu.tar.gz -C $HOME/.nargo/
 echo 'export PATH=$PATH:$HOME/.nargo/bin' >> ~/.bashrc && \
 source ~/.bashrc
 ```
+
 </details>
 
 <details>
@@ -52,6 +54,7 @@ tar -xvf $HOME/.nargo/bin/nargo-x86_64-apple-darwin.tar.gz -C $HOME/.nargo/bin/ 
 echo '\nexport PATH=$PATH:$HOME/.nargo/bin' >> ~/.zshrc && \
 source ~/.zshrc
 ```
+
 </details>
 
 Now generate the Solidity verifier.
@@ -63,9 +66,27 @@ nargo codegen-verifier
 
 This will generate a Solidity file located at `circuit/contract/circuit/plonk_vk.sol`. Deploy it on an EVM on-chain.
 
+Initialize a hardhat project
+
+Deploy the generated Solidity on Scroll Sepolia testnet using the following command:
+
+```bash
+npx hardhat --network scroll run scripts/deploy.js
+```
+
+plonk_vk Contract deployed to 0xd853c72d627845B59a3Fc9880eEcF50D699bcBEB
+
 ### Step 2. Deploy the verifier contract
 
 Now deploy the `CommentVerifier` contract located at `contracts/CommentVerifier.sol`. Pass the Verifier contract you just generated as constructor parameter.
+
+```bash
+npx hardhat --network scroll run scripts/deploy2.js
+```
+
+CommentVerifier Contract deployed to 0xD547726541FB37dB19fDB263f4855bA969034071
+
+0x0B5587b927F1f129D5752dD0448e594A3053EaA2
 
 ### Step 3. Launch the Relayer
 
