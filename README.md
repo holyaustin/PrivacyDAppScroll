@@ -1,17 +1,12 @@
-# ⚠️Not maintained anymore, migrated [here](https://github.com/Turupawn/EcrecoverInclusionProof)⚠️
+Message board with limited anonymity set.
 
-# On-chain Privacy DApp Demo
+# On-chain Privacy DApp Demo using inclusion proofs
 
 This demo showcases all the parts needed to create a privacy preserving DApp with good UX which are:
-
 * A circuit
 * A smart contract
 * A relayer
 * A webapp
-
-On this example we do a simple anonymous message board but it can be extended for other DApps in other fields such as DeFi, voting & governance, identity, etc..
-
-![Privacy zkDApp screenshot](https://raw.githubusercontent.com/Turupawn/PrivacyDAppDemo/master/screenshot.png)
 
 ## ⭐Features
 
@@ -20,7 +15,7 @@ On this example we do a simple anonymous message board but it can be extended fo
 | Aztec Noir circuit | ✅ |
 | Solidity verifier | ✅ |
 | ECDSA verification circuit | ✅ |
-| EIP712 enabled | ✅ |
+| Merkle tree membership proof | ✅ |
 | Prover on browser (WASM) | ✅ |
 | Ethers.js 6.9 relayer | ✅ |
 | MIT license | ✅ |
@@ -29,19 +24,18 @@ On this example we do a simple anonymous message board but it can be extended fo
 
 ### Step 1. Generate and deploy the Solidity verifier
 
-Make sure you installed Nargo `0.19.4` as detailed below:
+Make sure you installed Nargo `0.22.0` as detailed below:
 
 <details>
 <summary>On Linux</summary>
   
 ```bash
 mkdir -p $HOME/.nargo/bin && \
-curl -o $HOME/.nargo/bin/nargo-x86_64-unknown-linux-gnu.tar.gz -L https://github.com/noir-lang/noir/releases/download/v0.19.4/nargo-x86_64-unknown-linux-gnu.tar.gz && \
+curl -o $HOME/.nargo/bin/nargo-x86_64-unknown-linux-gnu.tar.gz -L https://github.com/noir-lang/noir/releases/download/v0.22.0/nargo-x86_64-unknown-linux-gnu.tar.gz && \
 tar -xvf $HOME/.nargo/bin/nargo-x86_64-unknown-linux-gnu.tar.gz -C $HOME/.nargo/bin/ && \
 echo 'export PATH=$PATH:$HOME/.nargo/bin' >> ~/.bashrc && \
 source ~/.bashrc
 ```
-
 </details>
 
 <details>
@@ -49,12 +43,11 @@ source ~/.bashrc
   
 ```bash
 mkdir -p $HOME/.nargo/bin && \
-curl -o $HOME/.nargo/bin/nargo-x86_64-apple-darwin.tar.gz -L https://github.com/noir-lang/noir/releases/download/v0.19.4/nargo-x86_64-apple-darwin.tar.gz && \
+curl -o $HOME/.nargo/bin/nargo-x86_64-apple-darwin.tar.gz -L https://github.com/noir-lang/noir/releases/download/v0.22.0/nargo-x86_64-apple-darwin.tar.gz && \
 tar -xvf $HOME/.nargo/bin/nargo-x86_64-apple-darwin.tar.gz -C $HOME/.nargo/bin/ && \
 echo '\nexport PATH=$PATH:$HOME/.nargo/bin' >> ~/.zshrc && \
 source ~/.zshrc
 ```
-
 </details>
 
 Now generate the Solidity verifier.
@@ -66,27 +59,39 @@ nargo codegen-verifier
 
 This will generate a Solidity file located at `circuit/contract/circuit/plonk_vk.sol`. Deploy it on an EVM on-chain.
 
-Initialize a hardhat project
+### Before you continue
 
-Deploy the generated Solidity on Scroll Sepolia testnet using the following command:
+Make sure you generate your anonymity set. Usually you may want to generate them on a library provided by Aztec that has the implementation of Pedersen hashing method that matches their prover library. However that library has not been released yet. So for the sake of compatibility we'll use the following circuit to print the merkle tree.
 
-```bash
-npx hardhat --network scroll run scripts/deploy.js
+```
+use dep::std::ecdsa_secp256k1::verify_signature;
+use dep::std;
+use dep::std::scalar_mul;
+use dep::std::hash;
+
+fn main(index : Field,
+  leafLeft: Field,
+  leafRight: Field
+) {
+    let root = std::merkle::compute_merkle_root(leafLeft, index, [leafRight]);
+    std::println(root);
+}
 ```
 
-plonk_vk Contract deployed to 0xd853c72d627845B59a3Fc9880eEcF50D699bcBEB
+In this example we'll use the following merkle tree with a few ethereum accounts I control. When you generate your own merkle tree make sure to update the `sendProof` function on the `app.js` file. And also, when you launch your `CommentVerifier` contract pass as paramater your merkle root.
+
+```
+└─ 0x2a550743aa7151b3324482a03b2961ec4b038672a701f8ad0051b2c9d2e6c4c0
+   ├─ 0x1476e5c502f3a532e7c36640e88eebf769ae99d6c50f3be65279ca937b795a3d
+   │  ├─ 0x000000000000000000000000707e55a12557E89915D121932F83dEeEf09E5d70
+   │  └─ 0x000000000000000000000000bef34f2FCAe62dC3404c3d01AF65a7784c9c4A19
+   └─ 0x00000000000000000000000008966BfFa14A7d0d7751355C84273Bb2eaF20FC3
+      └─ 0x00000000000000000000000008966BfFa14A7d0d7751355C84273Bb2eaF20FC3
+```
 
 ### Step 2. Deploy the verifier contract
 
 Now deploy the `CommentVerifier` contract located at `contracts/CommentVerifier.sol`. Pass the Verifier contract you just generated as constructor parameter.
-
-```bash
-npx hardhat --network scroll run scripts/deploy2.js
-```
-
-CommentVerifier Contract deployed to 0xD547726541FB37dB19fDB263f4855bA969034071
-
-0x0B5587b927F1f129D5752dD0448e594A3053EaA2
 
 ### Step 3. Launch the Relayer
 
@@ -112,4 +117,10 @@ The webapp will automatically open on your browser. Now you will be able to gene
 
 ## ⚠️Known issues (PRs welcome)
 
-* We need to compress the hashed message params to reduce L1 fees on L2s. We should use [this](https://github.com/Bank-of-JubJub/base/blob/2a0247a441463a6619cc8d5f13d81717d166b770/hardhat/contracts/UsingAccountControllers.sol#L158) and [this](https://github.com/Bank-of-JubJub/base/blob/master/circuits/change_eth_signer/src/main.nr)
+* This demo uses normal wallet signatures hence proofs are not nullifiable. See [plume](https://github.com/plume-sig/zk-nullifier-sig)
+
+## Deployed on scroll
+
+plonk_vk Contract deployed to 0xD8542343ceC6FbDdb62CaEBC613C320fB0A62303
+
+CommentVerifier Contract deployed to 0xe04725eD16105aB00cbdAC3dD28F5ccB774d29e5

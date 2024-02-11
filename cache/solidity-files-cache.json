@@ -1,0 +1,114 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/augustine/Dapps/2024/Feb2024/zkWhistle/contracts/CommentVerifier.sol": {
+      "lastModificationDate": 1707682191580,
+      "contentHash": "d18e2ba79c16e03ab933b5cef656d4f4",
+      "sourceName": "contracts/CommentVerifier.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "CommentVerifier",
+        "IUltraVerifier",
+        "Utils"
+      ]
+    },
+    "/home/augustine/Dapps/2024/Feb2024/zkWhistle/contracts/Lock.sol": {
+      "lastModificationDate": 1707682056259,
+      "contentHash": "ae66265769cc28ebdaa34881df95bc5e",
+      "sourceName": "contracts/Lock.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.9"
+      ],
+      "artifacts": [
+        "Lock"
+      ]
+    },
+    "/home/augustine/Dapps/2024/Feb2024/zkWhistle/contracts/plonk_vk.sol": {
+      "lastModificationDate": 1707682349387,
+      "contentHash": "82ef41a5662159a80b91a6246eed9c35",
+      "sourceName": "contracts/plonk_vk.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.4"
+      ],
+      "artifacts": [
+        "BaseUltraVerifier",
+        "UltraVerificationKey",
+        "UltraVerifier"
+      ]
+    }
+  }
+}

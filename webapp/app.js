@@ -107,28 +107,18 @@ async function connectWallet() {
 window.connectWallet=connectWallet;
 
 const onContractInitCallback = async () => {
-  var commentAmount = await my_contract.methods.commentAmount().call()
-  var contract_state = "commentAmount: " + commentAmount
+  var commentCount = await my_contract.methods.commentCount().call()
+  var contract_state = "commentCount: " + commentCount
   
   var maxMsgPerPage = 5;
   var pageIterator = 0;
   var commentsElement = document.getElementById("comments");
 
-  for(var i=parseInt(commentAmount);i>0;i--)
+  for(var i=parseInt(commentCount);i>0;i--)
   {
-    var title = await my_contract.methods.titles(i-1).call()
-    var text = await my_contract.methods.texts(i-1).call()
+    var comment = await my_contract.methods.comments(i-1).call()
     var paragraph = document.createElement("p");
-    var boldElement = document.createElement("b");
-    var textElement = document.createElement("span");
-    var brElement = document.createElement("br");
-    var titleElement = document.createElement("span");
-    titleElement.textContent = title;
-    textElement.textContent = text;
-    boldElement.appendChild(titleElement);
-    paragraph.appendChild(boldElement);
-    paragraph.appendChild(brElement);
-    paragraph.appendChild(textElement);
+    paragraph.textContent = "- " + comment;
     commentsElement.appendChild(paragraph);
     pageIterator++
     if(pageIterator >= maxMsgPerPage)
@@ -150,59 +140,73 @@ function splitIntoPairs(str) {
   return str.match(/.{1,2}/g) || [];
 }
 
-const sendProof = async (title, text) => {
+const sendProof = async (comment) => {
   document.getElementById("web3_message").textContent="Please sign the message ✍️";
-  var msgParams = JSON.stringify({
-    types: {
-        EIP712Domain: [
-            { name: 'name', type: 'string' },
-            { name: 'version', type: 'string' },
-            { name: 'chainId', type: 'uint256' },
-            { name: 'verifyingContract', type: 'address' },
-        ],
-        Comment: [
-            { name: 'title', type: 'string' },
-            { name: 'text', type: 'string' }
-        ],
-    },
-    primaryType: 'Comment',
-    domain: {
-        name: 'Anon Message Board',
-        version: '1',
-        chainId: parseInt(NETWORK_ID),
-        verifyingContract: COMMENT_VERIFIER_ADDRESS,
-    },
-    message: {
-        title: title,
-        text: text,
-    },
-  });
-  
-  var signature = await ethereum.request({
-    method: "eth_signTypedData_v4",
-    params: [accounts[0], msgParams],
-  });
 
-  var hashedMessage = ethers.utils.hashMessage(msgParams)  
-  const hashedMessageArray = ethers.utils.arrayify(hashedMessage)
+  const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+  await provider.send("eth_requestAccounts", []);
+  const signer = provider.getSigner();
+  const signderAddress = await signer.getAddress();
 
-  var publicKey = ethers.utils.recoverPublicKey(hashedMessage, signature)
+  const signature = await signer.signMessage(comment);
+  var hashedMessage = ethers.utils.hashMessage(comment)
+  var publicKey = ethers.utils.recoverPublicKey(
+    hashedMessage,
+    signature)
+
   publicKey = publicKey.substring(4)
-  
+
   let pub_key_x = publicKey.substring(0, 64);
   let pub_key_y = publicKey.substring(64);
+  
+  var sSignature = Array.from(ethers.utils.arrayify(signature))
+  sSignature.pop()
   
   const backend = new BarretenbergBackend(circuit);
   const noir = new Noir(circuit, backend);
 
-  var sSignature = Array.from(ethers.utils.arrayify(signature))
-  sSignature.pop()
+  let merkleTree = [
+    {
+      value: "0x707e55a12557E89915D121932F83dEeEf09E5d70",
+      index: "0",
+      hashPath: ["0x000000000000000000000000bef34f2FCAe62dC3404c3d01AF65a7784c9c4A19","0x00000000000000000000000008966BfFa14A7d0d7751355C84273Bb2eaF20FC3"],
+    },
+    {
+      value: "0xbef34f2FCAe62dC3404c3d01AF65a7784c9c4A19",
+      index: "1",
+      hashPath: ["0x000000000000000000000000707e55a12557E89915D121932F83dEeEf09E5d70","0x00000000000000000000000008966BfFa14A7d0d7751355C84273Bb2eaF20FC3"],
+    },
+    {
+      value: "0x08966BfFa14A7d0d7751355C84273Bb2eaF20FC3",
+      index: "2",
+      hashPath: ["0x00000000000000000000000008966BfFa14A7d0d7751355C84273Bb2eaF20FC3","0x1476e5c502f3a532e7c36640e88eebf769ae99d6c50f3be65279ca937b795a3d"],
+    }
+  ]
+
+  let index = null
+  let hashPath = null
+  for(let i=0; i<merkleTree.length; i++) {
+    if(merkleTree[i].value == signderAddress) {
+      index = merkleTree[i].index
+      hashPath = merkleTree[i].hashPath
+    }
+  }
+  if(index == null || index == hashPath) {
+    console.log("Could not find the signer on the merkle tree")
+    return;
+  }
+
+  console.log(index)
+  console.log(hashPath)
   
   const input = {
+    hash_path: hashPath,
+    index: index,
+    root: "0x2a550743aa7151b3324482a03b2961ec4b038672a701f8ad0051b2c9d2e6c4c0",
     pub_key_x: Array.from(ethers.utils.arrayify("0x"+pub_key_x)),
     pub_key_y: Array.from(ethers.utils.arrayify("0x"+pub_key_y)),
     signature: sSignature,
-    hashed_message: Array.from(hashedMessageArray)
+    hashed_message: Array.from(ethers.utils.arrayify(hashedMessage))
   };
 
   document.getElementById("web3_message").textContent="Generating proof... ⌛";
@@ -212,15 +216,19 @@ const sendProof = async (title, text) => {
   proof = "0x" + ethereumjs.Buffer.Buffer.from(proof.proof).toString('hex')
 
   var tHashedMessage = splitIntoPairs(hashedMessage.substring(2))
+
   for(var i=0; i<tHashedMessage.length; i++)
   {
     tHashedMessage[i] = "0x00000000000000000000000000000000000000000000000000000000000000" + tHashedMessage[i]
   }
 
+  tHashedMessage.push("0x2a550743aa7151b3324482a03b2961ec4b038672a701f8ad0051b2c9d2e6c4c0")
+
+  console.log("tHashedMessage2")
+  console.log(tHashedMessage)
 
 
-
-  await updateMetadata(proof, tHashedMessage, title, text)
+  await updateMetadata(proof, tHashedMessage, comment)
 
   /*
   const result = await my_contract.methods.sendProof(proof, tHashedMessage, title, text)
@@ -238,8 +246,8 @@ const sendProof = async (title, text) => {
 
 }
 
-const updateMetadata = async (proof, hashedMessage, title, text) => {
-  fetch(METADA_API_URL + "/relay?proof=" + proof + "&hashedMessage=" + hashedMessage + "&title=" + title + "&text=" + text)
+const updateMetadata = async (proof, hashedMessage, comment) => {
+  fetch(METADA_API_URL + "/relay?proof=" + proof + "&hashedMessage=" + hashedMessage + "&comment=" + comment)
   .then(res => res.json())
   .then(out =>
     console.log(out))

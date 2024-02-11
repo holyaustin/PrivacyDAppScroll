@@ -8,8 +8,7 @@
   <p id="contract_state"></p>
 
   <h3>Send a comment</h3>
-  title: <input type="input"  value="" id="_title"></input>
-  text: <input type="input"  value="" id="_text"></input>
+  message: <input type="input"  value="" id="_message"></input>
   <input type="button" value="Send" onclick="_sendProof()"></input>
 
   <h3>Comments</h3>
@@ -27,9 +26,8 @@
 <script>
   function _sendProof()
   {
-    _title = document.getElementById("_title").value
-    _text = document.getElementById("_text").value
-    sendProof(_title, _text)
+    _message = document.getElementById("_message").value
+    sendProof(_message)
   }
 </script>
 

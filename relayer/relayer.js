@@ -37,7 +37,7 @@ async function initAPI() {
   })
 }
 
-async function relayMessage(proof, hashedMessage, title, text)
+async function relayMessage(proof, hashedMessage, comment)
 {
   const transaction = {
     from: RELAYER_ADDRESS,
@@ -47,7 +47,7 @@ async function relayMessage(proof, hashedMessage, title, text)
     nonce: await provider.getTransactionCount(RELAYER_ADDRESS),
     chainId: "534351",
     data: contract.interface.encodeFunctionData(
-      "sendProof",[proof, hashedMessage, title, text]
+      "sendProof",[proof, hashedMessage, comment]
     )
   };
   const signedTransaction = await signer.populateTransaction(transaction);
@@ -58,10 +58,9 @@ async function relayMessage(proof, hashedMessage, title, text)
 app.get('/relay', (req, res) => {
   var proof = req.query["proof"]
   var hashedMessage = req.query["hashedMessage"].split(',')
-  var title = req.query["title"]
-  var text = req.query["text"]
+  var comment = req.query["comment"]
 
-  relayMessage(proof, hashedMessage, title, text)
+  relayMessage(proof, hashedMessage, comment)
 
   res.setHeader('Content-Type', 'application/json');
   res.send({
